@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inflation Rewards Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+        }
+        canvas { 
+            max-width: 800px; 
+            margin: auto; 
+        }
+        #votePubkey {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Inflation Rewards Per Epoch</h1>
+    <canvas id="rewardsChart"></canvas>
+    <p id="votePubkey"></p> 
+
+    <script>
+        async function fetchChartData() {
+            const response = await fetch("/api/data");
+            const data = await response.json();
+
+            // Extract data from JSON
+            const epochs = data.map(row => row.Epoch);
+            const rewards = data.map(row => parseFloat(row.InflationReward));
+            const votePubkey = data.length > 0 ? data[0].Validator : "Unknown";
+
+            // Display Vote Pubkey Below the Graph
+            document.getElementById("votePubkey").textContent = `Validator Vote Pubkey: ${votePubkey}`;
+
+            // Render the Chart
+            const ctx = document.getElementById("rewardsChart").getContext("2d");
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels: epochs,
+                    datasets: [{
+                        label: "Inflation Rewards",
+                        data: rewards,
+                        backgroundColor: "blue"
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Epoch" // X-axis label
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "Lamports" // Y-axis label
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        fetchChartData();
+    </script>
+</body>
+</html>

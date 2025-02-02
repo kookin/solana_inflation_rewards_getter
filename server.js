@@ -1,0 +1,54 @@
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
+const csvParser = require("csv-parser");
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const stream = require("stream");
+
+const S3_BUCKET = process.env.S3_BUCKET;
+const S3_FILENAME = process.env.S3_FILENAME;
+const AWS_REGION = process.env.AWS_REGION;
+const PORT = process.env.PORT || 3000;
+
+// Initialize AWS S3 Client
+const s3 = new S3Client({ region: AWS_REGION });
+
+const app = express();
+app.use(cors());
+app.use(express.static("public"));
+
+// API Route: Fetch CSV from S3 & Serve as JSON
+app.get("/api/data", async (req, res) => {
+  try {
+    console.log(`Fetching ${S3_FILENAME} from S3...`);
+
+    // Get CSV from S3
+    const command = new GetObjectCommand({
+      Bucket: S3_BUCKET,
+      Key: S3_FILENAME,
+    });
+
+    const { Body } = await s3.send(command);
+
+    // Convert S3 Stream to JSON
+    const results = [];
+    Body.pipe(csvParser())
+      .on("data", (row) => {
+        results.push(row);
+      })
+      .on("end", () => {
+        res.json(results);
+      });
+
+  } catch (error) {
+    console.error("S3 Fetch Error:", error.message);
+    res.status(500).json({ error: "Failed to retrieve data from S3" });
+  }
+});
+
+// Start Express Server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
