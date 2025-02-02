@@ -39,9 +39,15 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
-        run: terraform init
         working-directory: infrastructure
+        run: terraform init
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
         working-directory: infrastructure
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          RPC_URL: "https://solana-mainnet.gateway.tatum.io"
+          AWS_REGION: "af-south-1"
+          S3_BUCKET: "sol-inflation-data"
+          S3_FILENAME: "inflation_rewards.csv"
+        run: terraform apply -auto-approve
