@@ -3,8 +3,8 @@ provider "aws" {
 }
 
 terraform {
-  backend "s3" {  # ✅ Store Terraform state remotely
-    bucket         = "my-terraform-state-bucket"
+  backend "s3" { 
+    bucket         = "sol-inflation-data"
     key            = "terraform.tfstate"
     region         = "af-south-1"
     encrypt        = true
