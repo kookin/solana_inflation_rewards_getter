@@ -3,11 +3,12 @@ provider "aws" {
 }
 
 terraform {
-  required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
+  backend "s3" {  # ✅ Store Terraform state remotely
+    bucket         = "my-terraform-state-bucket"
+    key            = "terraform.tfstate"
+    region         = "af-south-1"
+    encrypt        = true
+    dynamodb_table = "terraform-lock"
   }
 }
 
@@ -17,15 +18,11 @@ resource "aws_iam_role" "ecs_execution_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
+    Statement = [{
+      Effect = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action = "sts:AssumeRole"
+    }]
   })
 }
 
@@ -39,15 +36,13 @@ resource "aws_ecs_cluster" "inflation_cluster" {
   name = "inflation-cluster"
 }
 
-# Create CloudWatch Log Group for ECS
+# Create CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name = "/ecs/inflation-app"
   retention_in_days = 7
 }
 
-# Authenticate Docker with AWS ECR
-data "aws_ecr_authorization_token" "ecr_token" {}
-
+# Use the Latest ECR Image Automatically ✅
 data "aws_ecr_image" "inflation_app" {
   repository_name = "inflation-app"
   most_recent     = true
@@ -60,12 +55,12 @@ resource "aws_ecs_task_definition" "inflation_task" {
   network_mode             = "awsvpc"
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn 
+  execution_role_arn       = aws_iam_role.ecs_execution_role.arn  
 
   container_definitions = jsonencode([
     {
       name      = "inflation-app"
-      image     = "${var.ecr_repository_url}:latest"  
+      image     = data.aws_ecr_image.inflation_app.image_uri  # ✅ Always use the latest pushed image
       memory    = 512
       cpu       = 256
       essential = true
@@ -89,7 +84,6 @@ resource "aws_ecs_task_definition" "inflation_task" {
   ])
 }
 
-
 # Create ECS Service
 resource "aws_ecs_service" "inflation_service" {
   name            = "inflation-service"
@@ -104,10 +98,10 @@ resource "aws_ecs_service" "inflation_service" {
     security_groups  = [aws_security_group.ecs_sg.id]
   }
 
-  depends_on = [aws_ecs_task_definition.inflation_task] # ✅ Fix: Ensure task definition is created first
+  depends_on = [aws_ecs_task_definition.inflation_task]  # ✅ Ensure task is created first
 }
 
-# Create Security Group
+# Security Group
 resource "aws_security_group" "ecs_sg" {
   name        = "ecs-security-group"
   description = "Allow HTTP traffic"
