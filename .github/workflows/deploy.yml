@@ -37,6 +37,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.10.5
 
       - name: Terraform Init
         working-directory: infrastructure
@@ -59,4 +61,4 @@ jobs:
           S3_BUCKET: "sol-inflation-data"
           S3_FILENAME: "inflation_rewards.csv"
         run: |
-          terraform apply -auto-approve -lock=false
+          terraform apply -auto-approve -lock=false -input=false
