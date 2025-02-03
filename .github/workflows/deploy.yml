@@ -54,10 +54,12 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          AWS_REGION: af-south-1
+          AWS_REGION: "af-south-1"
         run: |
-          terraform init
-          terraform workspace select default || terraform workspace new default
+          aws s3 ls s3://sol-inflation-data
+          terraform init -backend-config="region=af-south-1" \
+                        -backend-config="bucket=sol-inflation-data" \
+                        -backend-config="key=terraform.tfstate"
 
       - name: Terraform Apply
         working-directory: infrastructure
