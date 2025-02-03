@@ -1,16 +1,16 @@
-import dotenv from "dotenv";
-import axios from "axios";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import { S3Client } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
-import csvParser from "csv-parser";
 
-// Load environment variables
+const dotenv = require("dotenv");
 dotenv.config();
 
-const RPC_URL = process.env.RPC_URL;  // https://solana-mainnet.gateway.tatum.io"
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const csvParser = require("csv-parser");
+const { S3Client } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
+
+// Environment variables
+const RPC_URL = process.env.RPC_URL;    // default: "https://solana-mainnet.gateway.tatum.io"
 const API_KEY = process.env.API_KEY;
 const S3_BUCKET = process.env.S3_BUCKET;
 const S3_FILENAME = process.env.S3_FILENAME;
@@ -18,12 +18,8 @@ const AWS_REGION = process.env.AWS_REGION;
 
 const VALIDATOR = "FKsC411dik9ktS6xPADxs4Fk2SCENvAiuccQHLAPndvk";
 
-// Setup AWS SDK v3
+// AWS S3 client
 const s3 = new S3Client({ region: AWS_REGION });
-
-// Get __dirname in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Function to get the current epoch
 async function getCurrentEpoch() {
@@ -39,7 +35,7 @@ async function getCurrentEpoch() {
       {
         headers: {
           "Content-Type": "application/json",
-          "accept": "application/json",
+          accept: "application/json",
           "x-api-key": API_KEY
         }
       }
@@ -54,7 +50,7 @@ async function getCurrentEpoch() {
   }
 }
 
-// Function to get inflation rewards for the last completed epoch
+// Fetch inflation rewards for a given epoch
 async function getInflationRewards(epoch, retries = 3) {
   try {
     console.log(`Fetching inflation rewards for last Epoch: ${epoch}`);
@@ -69,7 +65,7 @@ async function getInflationRewards(epoch, retries = 3) {
       },
       {
         headers: {
-          "accept": "application/json",
+          accept: "application/json",
           "content-type": "application/json",
           "x-api-key": API_KEY
         }
@@ -100,7 +96,7 @@ async function getInflationRewards(epoch, retries = 3) {
   }
 }
 
-// Function to read existing CSV and prevent duplicate entries
+// Reads existing CSV to avoid duplicates
 async function readExistingCSV() {
   const csvPath = path.join(__dirname, "inflation_rewards.csv");
   const existingEntries = new Set();
@@ -122,13 +118,12 @@ async function readExistingCSV() {
   });
 }
 
-// Function to save data locally as CSV (removes duplicates)
+// Saves data to local CSV, then uploads to S3
 async function saveDataToCSV(data) {
   try {
     const csvPath = path.join(__dirname, "inflation_rewards.csv");
     const existingEntries = await readExistingCSV();
 
-    // Ensure file exists before writing
     const fileExists = fs.existsSync(csvPath);
     const csvWriter = fs.createWriteStream(csvPath, { flags: "a" });
 
@@ -138,8 +133,6 @@ async function saveDataToCSV(data) {
 
     data.forEach(({ epoch, validator, amount }) => {
       const entryKey = `${epoch}-${validator}-${amount}`;
-
-      // Only add new data if it's not already in the CSV
       if (!existingEntries.has(entryKey)) {
         existingEntries.add(entryKey);
         csvWriter.write(`${epoch},${validator},${amount}\n`);
@@ -148,7 +141,7 @@ async function saveDataToCSV(data) {
 
     csvWriter.end();
 
-    // Wait for the file to finish writing before uploading to S3
+    // Upload after writing
     csvWriter.on("finish", async () => {
       console.log("Data written to CSV:", csvPath);
       await uploadToS3(csvPath);
@@ -159,11 +152,10 @@ async function saveDataToCSV(data) {
   }
 }
 
-// Function to upload CSV to AWS S3
+// Upload CSV to S3
 async function uploadToS3(filePath) {
   try {
     const fileStream = fs.createReadStream(filePath);
-
     const upload = new Upload({
       client: s3,
       params: {
@@ -185,7 +177,7 @@ async function uploadToS3(filePath) {
   }
 }
 
-// Main function to fetch and store inflation rewards
+// Main function
 async function main() {
   console.log("\n🚀 Running inflation-getter.js at", new Date().toISOString());
 
@@ -195,7 +187,7 @@ async function main() {
     return;
   }
 
-  const lastEpoch = currentEpoch - 1; // ✅ Use previous completed epoch
+  const lastEpoch = currentEpoch - 1;
   const rewards = await getInflationRewards(lastEpoch);
   if (rewards.length === 0) {
     console.warn("No inflation rewards found for this epoch.");
@@ -206,6 +198,5 @@ async function main() {
 }
 
 // Run the script every 2 days
-setInterval(main, 172800000); 
+setInterval(main, 172800000);
 main();
-
