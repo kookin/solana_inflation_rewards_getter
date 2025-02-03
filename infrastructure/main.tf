@@ -89,6 +89,7 @@ resource "aws_ecs_service" "inflation_service" {
   cluster         = aws_ecs_cluster.inflation_cluster.id
   task_definition = aws_ecs_task_definition.inflation_task.arn
   desired_count   = 1
+  wait_for_steady_state = false
   launch_type     = "FARGATE"
 
   lifecycle {
