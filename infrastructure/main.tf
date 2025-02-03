@@ -91,13 +91,16 @@ resource "aws_ecs_service" "inflation_service" {
   desired_count   = 1
   launch_type     = "FARGATE"
 
+  lifecycle {
+  ignore_changes = [desired_count]
+  }
   network_configuration {
     subnets          = ["subnet-00c635a3e3e9faa4e", "subnet-009c2bda209459376", "subnet-0d2d8a5c48ce51072"]
     assign_public_ip = true
     security_groups  = [aws_security_group.ecs_sg.id]
   }
 
-  depends_on = [aws_ecs_task_definition.inflation_task]  # ✅ Ensure task is created first
+  depends_on = [aws_ecs_task_definition.inflation_task] 
 }
 
 # Security Group

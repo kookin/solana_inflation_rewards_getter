@@ -44,7 +44,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: af-south-1
-        run: terraform init
+        run: |
+          terraform init
+          terraform workspace select default || terraform workspace new default
 
       - name: Terraform Apply
         working-directory: infrastructure
@@ -56,4 +58,5 @@ jobs:
           RPC_URL: "https://solana-mainnet.gateway.tatum.io"
           S3_BUCKET: "sol-inflation-data"
           S3_FILENAME: "inflation_rewards.csv"
-        run: terraform apply -auto-approve
+        run: |
+          terraform apply -auto-approve -lock=false
