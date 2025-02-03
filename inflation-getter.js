@@ -19,7 +19,13 @@ const AWS_REGION = process.env.AWS_REGION;
 const VALIDATOR = "FKsC411dik9ktS6xPADxs4Fk2SCENvAiuccQHLAPndvk";
 
 // AWS S3 client
-const s3 = new S3Client({ region: AWS_REGION });
+const s3 = new S3Client({
+  region: AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
+});
 
 // Function to get the current epoch
 async function getCurrentEpoch() {
@@ -167,7 +173,7 @@ async function uploadToS3(filePath) {
     });
 
     upload.on("httpUploadProgress", (progress) => {
-      console.log(`⏳ Uploading... ${progress.loaded} bytes transferred`);
+      console.log(`Uploading... ${progress.loaded} bytes transferred`);
     });
 
     await upload.done();
