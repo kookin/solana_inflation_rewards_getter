@@ -11,18 +11,14 @@ terraform {
   }
 }
 
-resource "aws_iam_policy" "s3_access_policy" {
-  name = "s3-access-policy"
+resource "aws_iam_policy" "ecs_s3_policy" {
+  name = "ecs-task-s3-access"
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Action = [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket"
-      ]
+      Effect   = "Allow"
+      Action   = ["s3:GetObject", "s3:ListBucket"]
       Resource = [
         "arn:aws:s3:::${var.s3_bucket}",
         "arn:aws:s3:::${var.s3_bucket}/*"
@@ -31,10 +27,11 @@ resource "aws_iam_policy" "s3_access_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_s3_policy" {
-  role       = aws_iam_role.ecs_execution_role.name
-  policy_arn = aws_iam_policy.s3_access_policy.arn
+resource "aws_iam_role_policy_attachment" "ecs_task_s3_policy" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.ecs_s3_policy.arn
 }
+
 
 # Create ECS Cluster
 resource "aws_ecs_cluster" "inflation_cluster" {
@@ -47,7 +44,7 @@ resource "aws_cloudwatch_log_group" "ecs_log_group" {
   retention_in_days = 7
 }
 
-# Use the Latest ECR Image Automatically ✅
+# Use the Latest ECR Image Automatically 
 data "aws_ecr_image" "inflation_app" {
   repository_name = "inflation-app"
   most_recent     = true
@@ -61,15 +58,15 @@ resource "aws_ecs_task_definition" "inflation_task" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn  
+  task_role_arn            = aws_iam_role.ecs_task_role.arn      
 
   container_definitions = jsonencode([
     {
       name      = "inflation-app"
-      image     = data.aws_ecr_image.inflation_app.image_uri  # ✅ Always use the latest pushed image
+      image     = data.aws_ecr_image.inflation_app.image_uri
       memory    = 512
       cpu       = 256
       essential = true
-      portMappings = [{ containerPort = 3000 }]
       environment = [
         { name = "RPC_URL", value = var.rpc_url },
         { name = "API_KEY", value = var.api_key },
