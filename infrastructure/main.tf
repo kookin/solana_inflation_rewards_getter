@@ -24,47 +24,60 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-resource "aws_iam_policy" "ecs_s3_policy" {
-  name = "ecs-task-s3-access"
+resource "aws_iam_policy" "ecs_task_policy" {
+  name = "ecs-task-full-access"
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
-      Resource = [
-        "arn:aws:s3:::${var.s3_bucket}",
-        "arn:aws:s3:::${var.s3_bucket}/*"
-      ]
-    }]
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.s3_bucket}",
+          "arn:aws:s3:::${var.s3_bucket}/*"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Resource = "*"
+      }
+    ]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_s3_policy" {
   role       = aws_iam_role.ecs_task_role.name
-  policy_arn = aws_iam_policy.ecs_s3_policy.arn
+  policy_arn = aws_iam_policy.ecs_task_policy.arn
 }
 
-
-
-# Create ECS Cluster
 resource "aws_ecs_cluster" "inflation_cluster" {
   name = "inflation-cluster"
 }
 
-# Create CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name = "/ecs/inflation-app"
   retention_in_days = 7
 }
 
-# Use the Latest ECR Image Automatically 
 data "aws_ecr_image" "inflation_app" {
   repository_name = "inflation-app"
   most_recent     = true
 }
 
-# Create ECS Task Definition
 resource "aws_ecs_task_definition" "inflation_task" {
   family                   = "inflation-task"
   requires_compatibilities = ["FARGATE"]
@@ -100,8 +113,6 @@ resource "aws_ecs_task_definition" "inflation_task" {
   ])
 }
 
-
-# Create ECS Service
 resource "aws_ecs_service" "inflation_service" {
   name            = "inflation-service"
   cluster         = aws_ecs_cluster.inflation_cluster.id
@@ -111,8 +122,9 @@ resource "aws_ecs_service" "inflation_service" {
   launch_type     = "FARGATE"
 
   lifecycle {
-  ignore_changes = [desired_count]
+    ignore_changes = [desired_count]
   }
+
   network_configuration {
     subnets          = ["subnet-00c635a3e3e9faa4e", "subnet-009c2bda209459376", "subnet-0d2d8a5c48ce51072"]
     assign_public_ip = true
@@ -122,10 +134,9 @@ resource "aws_ecs_service" "inflation_service" {
   depends_on = [aws_ecs_task_definition.inflation_task] 
 }
 
-# Security Group
 resource "aws_security_group" "ecs_sg" {
   name        = "ecs-security-group"
-  description = "Allow HTTP traffic"
+  description = "Allow traffic for ECS tasks"
   vpc_id      = "vpc-0de2ccd2ab3114949"
 
   ingress {
@@ -145,12 +156,12 @@ resource "aws_security_group" "ecs_sg" {
   egress {
     from_port   = 0
     to_port     = 0
-    protocol    = "-1"
+    protocol    = "-1"  
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
-# Define Variables
+
 variable "ecr_repository_url" {
   default = "386757658188.dkr.ecr.af-south-1.amazonaws.com/inflation-app"
 }
