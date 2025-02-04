@@ -8,6 +8,13 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const { S3Client } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
+const { fromNodeProviderChain } = require("@aws-sdk/credential-providers");
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: fromNodeProviderChain(), 
+});
+
 
 // Environment variables
 const RPC_URL = process.env.RPC_URL;    // default: "https://solana-mainnet.gateway.tatum.io"
@@ -18,14 +25,6 @@ const AWS_REGION = process.env.AWS_REGION;
 
 const VALIDATOR = "FKsC411dik9ktS6xPADxs4Fk2SCENvAiuccQHLAPndvk";
 
-// AWS S3 client
-const s3 = new S3Client({
-  region: AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
-});
 
 // Function to get the current epoch
 async function getCurrentEpoch() {
