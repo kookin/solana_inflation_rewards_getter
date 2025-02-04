@@ -19,7 +19,15 @@ This project automates the retrieval, storage, and visualization.
 
 ## 📂 Project Structure  
 
-solana_inflation_rewards_getter ├── infrastructure/ # Terraform configuration for AWS infrastructure ├── src/ # Source code │ ├── inflation-getter.js # Fetches & stores inflation rewards │ ├── server.js # Express API serving CSV data from S3 │ ├── .env # Environment variables (not committed) │ ├── package.json # Dependencies & scripts ├── public/ # Frontend (HTML, CSS, JS) │ ├── index.html # Dashboard UI ├── deploy.yml # GitHub Actions CI/CD workflow ├── Dockerfile # Docker containerization ├── README.md # This file
+solana_inflation_rewards_getter 
+├── infrastructure/ # Terraform configuration for AWS infrastructure 
+├── src/ # Source code │ ├── inflation-getter.js # Fetches & stores inflation rewards │ 
+├── server.js # Express API serving CSV data from S3 │ 
+├── .env # Environment variables (not committed) │
+├── package.json # Dependencies & scripts 
+├── public/ # Frontend (HTML, CSS, JS) │ 
+├── deploy.yml # GitHub Actions CI/CD workflow 
+├── Dockerfile # Docker containerization ├── README.md # This file
 
 ---
 
@@ -80,12 +88,15 @@ Fetches real-time data from the Express API.
 ## Docker Build and Run
 
 docker build -t inflation-app .
+
 docker run -p 3000:3000 --env-file .env inflation-app
 
 ## Deploy AWS ECS (Fargate)
 
 cd infrastructure
+
 terraform init
+
 terraform apply -auto-approve
 
 

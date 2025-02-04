@@ -22,6 +22,7 @@ const S3_BUCKET = process.env.S3_BUCKET;
 const S3_FILENAME = process.env.S3_FILENAME;
 const AWS_REGION = process.env.AWS_REGION;
 
+// Currently set to P2P.org validator
 const VALIDATOR = "FKsC411dik9ktS6xPADxs4Fk2SCENvAiuccQHLAPndvk";
 
 
@@ -46,7 +47,7 @@ async function getCurrentEpoch() {
     );
 
     const epoch = response.data.result.epoch;
-    console.log(`✅ Current Epoch: ${epoch}`);
+    console.log(`Current Epoch: ${epoch}`);
     return epoch;
   } catch (error) {
     console.error("Error fetching current epoch:", error.response?.data || error.message);
