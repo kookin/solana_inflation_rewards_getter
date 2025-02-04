@@ -8,11 +8,13 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const { S3Client } = require("@aws-sdk/client-s3");
 const { Upload } = require("@aws-sdk/lib-storage");
-const { fromNodeProviderChain } = require("@aws-sdk/credential-providers");
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
-  credentials: fromNodeProviderChain(), 
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
 });
 
 
