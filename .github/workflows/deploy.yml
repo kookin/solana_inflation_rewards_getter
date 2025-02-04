@@ -15,12 +15,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18 
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Debug Installed Packages
+        run: npm list | grep aws-sdk
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-          aws-secret-access-key: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-          aws-region: af-south-1
+          AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          AWS_REGION: "af-south-1"
 
       - name: Debug AWS Credentials
         run: aws sts get-caller-identity  # Ensure credentials are valid
@@ -54,8 +65,10 @@ jobs:
       - name: Terraform Apply
         working-directory: infrastructure
         env:
-          TF_VAR_api_key: "${{ secrets.API_KEY }}"
-          TF_VAR_aws_region: "af-south-1"
+          TF_VAR_api_key: "${{ secrets.TF_VAR_API_KEY }}" 
+          AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          AWS_REGION: "af-south-1"
           TF_VAR_s3_bucket: "sol-inflation-data"
           TF_VAR_s3_filename: "inflation_rewards.csv"
         run: |
