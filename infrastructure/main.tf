@@ -11,6 +11,19 @@ terraform {
   }
 }
 
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecsTaskRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = { Service = "ecs-tasks.amazonaws.com" }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
 resource "aws_iam_policy" "ecs_s3_policy" {
   name = "ecs-task-s3-access"
 
@@ -18,7 +31,7 @@ resource "aws_iam_policy" "ecs_s3_policy" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["s3:GetObject", "s3:ListBucket"]
+      Action   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
       Resource = [
         "arn:aws:s3:::${var.s3_bucket}",
         "arn:aws:s3:::${var.s3_bucket}/*"
@@ -31,6 +44,7 @@ resource "aws_iam_role_policy_attachment" "ecs_task_s3_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = aws_iam_policy.ecs_s3_policy.arn
 }
+
 
 
 # Create ECS Cluster
@@ -58,7 +72,7 @@ resource "aws_ecs_task_definition" "inflation_task" {
   cpu                      = "512"
   memory                   = "1024"
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn  
-  task_role_arn            = aws_iam_role.ecs_task_role.arn      
+  task_role_arn            = aws_iam_role.ecs_task_role.arn  
 
   container_definitions = jsonencode([
     {
@@ -85,6 +99,7 @@ resource "aws_ecs_task_definition" "inflation_task" {
     }
   ])
 }
+
 
 # Create ECS Service
 resource "aws_ecs_service" "inflation_service" {
