@@ -11,6 +11,7 @@ terraform {
   }
 }
 
+### 🔥 FIX: ADD EXECUTION ROLE (NEEDED FOR ECS TO START TASKS)
 resource "aws_iam_role" "ecs_execution_role" {
   name = "ecsExecutionRole"
 
@@ -29,6 +30,7 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+### 🔥 FIX: ADD TASK ROLE (NEEDED FOR AWS API ACCESS)
 resource "aws_iam_role" "ecs_task_role" {
   name = "ecsTaskRole"
 
@@ -42,6 +44,7 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
+### 🔥 FIX: ADD FULL S3 ACCESS & METADATA ACCESS
 resource "aws_iam_policy" "ecs_task_policy" {
   name = "ecs-task-full-access"
 
@@ -72,6 +75,14 @@ resource "aws_iam_policy" "ecs_task_policy" {
         Effect = "Allow"
         Action = "sts:AssumeRole"
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeTags"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -96,6 +107,7 @@ data "aws_ecr_image" "inflation_app" {
   most_recent     = true
 }
 
+### 🔥 FIX: ENSURE TASK ROLE IS ATTACHED TO TASK DEFINITION
 resource "aws_ecs_task_definition" "inflation_task" {
   family                   = "inflation-task"
   requires_compatibilities = ["FARGATE"]
@@ -171,6 +183,7 @@ resource "aws_security_group" "ecs_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ### 🔥 FIX: ENSURE OUTBOUND TRAFFIC IS ALLOWED
   egress {
     from_port   = 0
     to_port     = 0
