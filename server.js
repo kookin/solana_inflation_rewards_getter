@@ -7,18 +7,14 @@ const path = require("path");
 const csvParser = require("csv-parser");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 
-// Load environment variables
-const S3_BUCKET = process.env.S3_BUCKET;
-const S3_FILENAME = process.env.S3_FILENAME;
-const AWS_REGION = process.env.AWS_REGION;
-const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
-const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
-const PORT = process.env.PORT || 3000;
-
-
 const s3 = new S3Client({
   region: process.env.AWS_REGION
 });
+
+const S3_BUCKET = process.env.S3_BUCKET;
+const S3_FILENAME = process.env.S3_FILENAME;
+const AWS_REGION = process.env.AWS_REGION;
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 app.use(cors());
