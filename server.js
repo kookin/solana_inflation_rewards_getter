@@ -6,15 +6,29 @@ const fs = require("fs");
 const path = require("path");
 const csvParser = require("csv-parser");
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
-const stream = require("stream");
 
+// Load environment variables
 const S3_BUCKET = process.env.S3_BUCKET;
 const S3_FILENAME = process.env.S3_FILENAME;
 const AWS_REGION = process.env.AWS_REGION;
+const AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
+const AWS_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY;
 const PORT = process.env.PORT || 3000;
 
-// Initialize AWS S3 Client
-const s3 = new S3Client({ region: AWS_REGION });
+// Debug AWS Credentials to ensure they are set
+console.log("Debug AWS Credentials:");
+console.log("AWS_ACCESS_KEY_ID:", AWS_ACCESS_KEY_ID ? "Set" : "Missing");
+console.log("AWS_SECRET_ACCESS_KEY:", AWS_SECRET_ACCESS_KEY ? "Set" : "Missing");
+console.log("AWS_REGION:", AWS_REGION ? "Set" : "Missing");
+
+// Explicitly provide credentials to AWS S3 Client
+const s3 = new S3Client({
+  region: AWS_REGION,
+  credentials: {
+    accessKeyId: AWS_ACCESS_KEY_ID,
+    secretAccessKey: AWS_SECRET_ACCESS_KEY
+  }
+});
 
 const app = express();
 app.use(cors());
@@ -23,7 +37,7 @@ app.use(express.static("public"));
 // API Route: Fetch CSV from S3 & Serve as JSON
 app.get("/api/data", async (req, res) => {
   try {
-    console.log(`Fetching ${S3_FILENAME} from S3...`);
+    console.log(`Fetching ${S3_FILENAME} from S3 bucket ${S3_BUCKET}...`);
 
     // Get CSV from S3
     const command = new GetObjectCommand({
@@ -40,7 +54,12 @@ app.get("/api/data", async (req, res) => {
         results.push(row);
       })
       .on("end", () => {
+        console.log("Successfully retrieved and parsed CSV data.");
         res.json(results);
+      })
+      .on("error", (err) => {
+        console.error("Error parsing CSV:", err.message);
+        res.status(500).json({ error: "Failed to parse CSV file" });
       });
 
   } catch (error) {
